@@ -104,13 +104,19 @@
                                       (send reader next)))]
               (cond [(send reader end?)
                      (raise "Unexpected EOF: no \")\" to end \"(\".")]
+                    [(not (string=? "(" first)) (raise "error")]
                     [(string=? "(" first) (read_seq reader "(" ")")]
                     [(string=? ")" first) (raise "Unexpected \")\"")])))]
     (read_list0 '())))
 
 
 
-
+(check-expect (read_seq (new Reader% [tokens (list "(" "+" "2" "3" ")")]
+                             [i 0]) "(" ")")
+              (list "+" "2" "3"))
+(check-expect (read_seq (new Reader% [tokens (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")")]
+                             [i 0]) "(" ")")
+              (list "+" "2" "3" (list "*" "3" "4")))
 (define (read_seq reader frst end)
   (local [(define (read_seq0 rsf)
             (local [(define token (send reader next))]
@@ -121,6 +127,10 @@
 
 
 
+(check-expect
+ (read_atom
+  (new Reader% [tokens (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")")]
+       [i 0])) "(")
 
 (define (read_atom reader)
   (send reader next))

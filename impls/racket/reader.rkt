@@ -63,7 +63,7 @@
             (local [(define first (send reader peek))]
               (cond [(send reader end?) rsf]
                     [(string=? "(" first)
-                     (read_form0 (cons rsf (cons (read_list reader (send reader next)) '())))]
+                     (read_form0 (cons rsf (cons (read_list reader (send reader next)) '())) reader)]
                     [else
                      (read_form0 (append rsf (list (read_atom reader))) reader)])))]
     (read_form0 '() reader)))
@@ -74,13 +74,13 @@
 
 
 (check-expect (read_list (new Reader% [tokens (list "(" "+" "2" "3" ")")]
-                              [i 0]))
+                              [i 0]) "(")
               (list "+" "2" "3"))
 (check-expect (read_list  (new Reader% [tokens (list "(" "(" "+" "2" "3" ")" "(" "*" "3" "4" ")" ")")]
-                               [i 0]))
+                               [i 0]) "(")
               (list (list "+" "2" "3") (list "*" "3" "4")))
 (check-expect (read_list (new Reader% [tokens (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")")]
-                              [i 0]))
+                              [i 0]) "(")
               (list "+" "2" "3" (list "*" "3" "4")))
 
 (define (read_list reader frst)
@@ -90,7 +90,7 @@
               (cond [(send reader end?) rsf]
                     [(string=? ")" first) rsf]
                     [else
-                     (read_list (cons rsf (cons (read_form reader) '())))])))]
+                     (read_list0 (cons rsf (cons (read_form reader) '())))])))]
     (read_list0 '())))
 
 

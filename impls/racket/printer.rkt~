@@ -1,7 +1,5 @@
 #lang racket
 
-(provide pr_str)
-
 (define (pr_str data)
   (cond [(number? data) data]
         [(symbol? data) data]

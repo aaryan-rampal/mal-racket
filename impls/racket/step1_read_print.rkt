@@ -1,6 +1,7 @@
 #lang racket
 
-(require "readline.rkt" "types.rkt")
+(require readline)
+(require readline/readline)
 (require "reader.rkt" "printer.rkt")
 
 ;; READ
@@ -13,7 +14,7 @@
 
 ;; PRINT
 (define (PRINT exp)
-  (print_str exp))
+  (pr_str exp))
 
 ;; rep
 (define (rep str)

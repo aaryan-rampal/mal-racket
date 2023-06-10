@@ -53,17 +53,7 @@
               (list "+" "2" "3" (list "*" "3" "4")))
 
 (define (read_form reader)
-  (local [(define (read_form0 rsf)
-            (local [(define first (send reader peek))]
-              (cond ;[(empty? lis) rsf]
-                    [(string=? "(" first)
-                     (if (empty? rsf)
-                         (read_list reader)
-                         (cons rsf (read_list reader)))]
-                    [else
-                     (read_form0 reader
-                                 (append rsf (list (read_atom reader))))])))]
-    (read_form0 '())))
+  )
 
 
 
@@ -81,14 +71,7 @@
               (list "+" "2" "3" (list "*" "3" "4")))
 
 (define (read_list reader)
-  (local [(define (read_list0 rsf)
-            (local [(define first (send reader peek))]
-              (cond ;[(empty? lis) (raise 'failed #t)]
-                    [(string=? "(" first) (read_list0 (send reader next))]
-                    [(string=? ")" first) rsf]
-                    [else
-                     (cons (read_form reader) (read_list0 (append rsf (list first))))])))]
-    (read_list0 '())))
+  false)
 
 (define (read_atom reader)
   (send reader next))

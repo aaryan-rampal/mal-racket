@@ -1,11 +1,10 @@
 #lang racket
 
 (require "readline.rkt" "types.rkt")
-(require "reader.rkt" "printer.rkt")
 
 ;; READ
 (define (READ str)
-  (read_str str))
+  str)
 
 ;; EVAL
 (define (EVAL ast env)
@@ -13,7 +12,7 @@
 
 ;; PRINT
 (define (PRINT exp)
-  (print_str exp))
+  exp)
 
 ;; rep
 (define (rep str)

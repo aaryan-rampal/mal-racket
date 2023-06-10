@@ -10,4 +10,13 @@
   (0))
 
 (define (tokenize inp)
+  (string-split inp #rx"[\\s,]*(~@|[\\[\\]{}()'`~^@]|\"(?:\\.|[^\\\"])*\"?|;.*|[^\\s\\[\\]{}('\"`,;)]*)"))
+
+(define (read_form)
+  (0))
+
+(define (read_list)
+  (0))
+
+(define (read_atom)
   (0))

@@ -10,9 +10,9 @@
     (init-field tokens)
     (init-field i)
     (define/public (peek)
-      (cond [(i >= (length tokens))] (raise 'failed #t)
+      (cond [(>= i (length tokens)) (raise 'failed #t)]
             [else (list-ref tokens i)]))
-    (define/public (next los)
+    (define/public (next)
       (begin (set! i (+ i 1))
              (peek)))))
 
@@ -53,7 +53,14 @@
               (list "+" "2" "3" (list "*" "3" "4")))
 
 (define (read_form reader)
-  )
+  ;; rsf is a list of the arguments seen so far by read_form 
+  (local [(define (read_form0 rsf)
+            (local [(define first (send reader peek))]
+              (cond [(empty? (get-field tokens reader)) rsf]
+                    [(string=? "(" first) (read_list reader)]
+                    [else
+                     (read_form0 (append rsf (list read_atom reader)))])))]
+    (read_form0 '())))
 
 
 
@@ -72,6 +79,8 @@
 
 (define (read_list reader)
   false)
+
+
 
 (define (read_atom reader)
   (send reader next))

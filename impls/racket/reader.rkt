@@ -39,22 +39,33 @@
               (list (list "+" "2" "3") (list "*" "3" "4")))
 (check-expect (read_form (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")"))
               (list "+" "2" "3" (list "*" "3" "4")))
+
 (define (read_form los)
-  (local [(define (fn-for-lis lis rsf)
-            (local [(define first
-                      (if (not (empty? lis))
-                          (peek lis)
-                          ""))]
-              (cond [(empty? lis) rsf]
-                    [(string=? "(" first)
-                     (fn-for-lis (return_until_bracket_end lis)
-                                 (if (empty? rsf)
-                                     (read_list (rest lis))
-                                     (cons rsf (read_list (rest lis)))))]
-                    [else
-                     (fn-for-lis (rest lis)
-                                 (append rsf (list (read_atom lis))))])))]
-    (fn-for-lis los '())))
+  (local [(define first
+            (if (not (empty? los))
+                (peek los)
+                ""))
+          
+          (define (read_form0 lis rsf)
+            (cond [(empty? lis) rsf]
+                  [(string=? "(" first)
+                   (read_form0 (rest lis)
+                               (if (empty? rsf)
+                                   (read_list (rest lis))
+                                   (cons rsf (read_list (rest lis)))))]
+                  [else
+                   (read_form0 (rest lis)
+                               (append rsf (list (read_atom lis))))]))
+          
+          (define (read_list lis rsf)
+            (cond [(empty? lis) (raise 'failed #t)]
+                  [(string=? ")" first) rsf]
+                  [else
+                   (read_list (rest lis)
+                              (if (empty? rsf)
+                                  (read_form0 (rest lis))
+                                  (append rsf (read_form0 (rest lis)))))]))]
+    (read_form0 los '())))
 
 
 

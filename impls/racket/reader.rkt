@@ -1,5 +1,7 @@
 #lang racket
 
+(require test-engine/racket-tests)
+
 (provide read_str)
 
 (define (next)
@@ -25,26 +27,74 @@
          #px"[\\s,]*(~@|[\\[\\]{}()'`~^@]|\"(?:\\.|[^\\\"])*\"?|;.*|[^\\s\\[\\]
 {}('\"`,;)]*)" inp))))
 
+
+
+
+
+
+
+(check-expect (read_form (list "(" "+" "2" "3" ")"))
+              (list "+" "2" "3"))
+(check-expect (read_form (list "(" "(" "+" "2" "3" ")" "(" "*" "3" "4" ")" ")"))
+              (list (list "+" "2" "3") (list "*" "3" "4")))
+(check-expect (read_form (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")"))
+              (list "+" "2" "3" (list "*" "3" "4")))
 (define (read_form los)
   (local [(define (fn-for-lis lis rsf)
-            (local [(define first (peek lis))]
+            (local [(define first
+                      (if (not (empty? lis))
+                          (peek lis)
+                          ""))]
               (cond [(empty? lis) rsf]
-                    [(string=? "(" first) (append rsf (read_list los))]
+                    [(string=? "(" first)
+                     (fn-for-lis (return_until_bracket_end lis)
+                                 (if (empty? rsf)
+                                     (read_list (rest lis))
+                                     (cons rsf (read_list (rest lis)))))]
                     [else
-                     (append rsf (list (read_atom los)))])))]
+                     (fn-for-lis (rest lis)
+                                 (append rsf (list (read_atom lis))))])))]
     (fn-for-lis los '())))
 
-(define (read_list lis)
+
+
+(check-expect (return_until_bracket_end (list "+" "2" "3" ")"))
+              '())
+(define (return_until_bracket_end los)
+  (cond [(empty? los) 0]
+        [(string=? ")" (peek los)) (rest los)]
+        [else (return_until_bracket_end (rest los))]))
+
+
+
+
+
+
+(check-expect (read_list (list "+" "2" "3" ")"))
+              (list "+" "2" "3"))
+(check-expect (read_list (list "2" "3" "(" "*" "3" "4" ")"))
+              (list "2" "3" (list "*" "3" "4")))
+(define (read_list los)
   (local [(define (fn-for-lis lis rsf)
-            (local [(define first (peek lis))]
-              (cond [(string=? ")" first) rsf]
+            (local [(define first
+                      (if (not (empty? lis))
+                          (peek lis)
+                          ""))]
+              (cond [(empty? lis) (raise 'failed #t)]
+                    [(string=? ")" first) rsf]
                     [else
-                     (read_form (rest lis))])))]
-    (fn-for-lis lis '())))
+                     (fn-for-lis (rest lis)
+                                 (if (empty? rsf)
+                                     (read_form (rest lis))
+                                     (append rsf (read_form (rest lis)))))])))]
+    (fn-for-lis los '())))
 
 (define (read_atom los)
-  los)
+  (first los))
 
-(tokenize "(+ 2 (* 3 4))")
-(read_form (tokenize  "(+ 2 (* 3 4))"))
-(read_str "(+ 2 (* 3 4))")
+;(tokenize "(+ 2 (* 3 4))")
+;(read_list (list "(" "!" ")"))
+;(read_form (tokenize  "(+ 2 (* 3 4))"))
+;(read_str "(+ 2 4)")
+(test)
+

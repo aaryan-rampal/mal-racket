@@ -1,6 +1,6 @@
 #lang racket
 
-(require "readline.rkt" "types.rkt")
+(require "readline.rkt")
 
 ;; READ
 (define (READ str)

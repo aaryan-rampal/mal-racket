@@ -8,20 +8,18 @@
   (class object%
     (super-new)
     (init-field tokens)
-    (define/public (peek los)
-      (first tokens))
+    (init-field i)
+    (define/public (peek)
+      (cond [(i >= (length tokens))] (raise 'failed #t)
+            [else (list-ref tokens i)]))
     (define/public (next los)
-      (begin (new this% (rest tokens))
-             (first tokens)))))
+      (begin (set! i (+ i 1))
+             (peek)))))
 
-(define (next)
-  (0))
 
-(define (peek los)
-  (first los))
 
 (define (read_str str)
-  (local [(define reader (dynamic-instantiate Reader% (tokenize str)))]
+  (local [(define reader (new Reader% [tokens (tokenize str)] [i 0]))]
     (read_form reader)))
 
 ;; use regex match, filter all the strings that satisfy NOT (EMPTY AND first
@@ -44,64 +42,56 @@
 
 
 
-(check-expect (read_form (list "(" "+" "2" "3" ")"))
+(check-expect (read_form (new Reader% [tokens (list "(" "+" "2" "3" ")")]
+                              [i 0]))
               (list "+" "2" "3"))
-(check-expect (read_form (list "(" "(" "+" "2" "3" ")" "(" "*" "3" "4" ")" ")"))
+(check-expect (read_form  (new Reader% [tokens (list "(" "(" "+" "2" "3" ")" "(" "*" "3" "4" ")" ")")]
+                               [i 0]))
               (list (list "+" "2" "3") (list "*" "3" "4")))
-(check-expect (read_form (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")"))
+(check-expect (read_form (new Reader% [tokens (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")")]
+                              [i 0]))
               (list "+" "2" "3" (list "*" "3" "4")))
 
-(define (read_form los)
-  (local [(define (read_form0 lis rsf)
-            (local [(define first
-                      (if (not (empty? los))
-                          (peek los)
-                          ""))]
-              (cond [(empty? lis) rsf]
+(define (read_form reader)
+  (local [(define (read_form0 rsf)
+            (local [(define first (send reader peek))]
+              (cond ;[(empty? lis) rsf]
                     [(string=? "(" first)
                      (if (empty? rsf)
-                         (read_list (rest lis))
-                         (cons rsf (read_list (rest lis))))]
+                         (read_list reader)
+                         (cons rsf (read_list reader)))]
                     [else
-                     (read_form0 (rest lis)
-                                 (append rsf (list (read_atom lis))))])))]
-    (read_form0 los '())))
-
-
-
-(check-expect (return_until_bracket_end (list "+" "2" "3" ")"))
-              '())
-(define (return_until_bracket_end los)
-  (cond [(empty? los) 0]
-        [(string=? ")" (peek los)) (rest los)]
-        [else (return_until_bracket_end (rest los))]))
+                     (read_form0 reader
+                                 (append rsf (list (read_atom reader))))])))]
+    (read_form0 '())))
 
 
 
 
 
 
-(check-expect (read_list (list "+" "2" "3" ")"))
+(check-expect (read_list (new Reader% [tokens (list "(" "+" "2" "3" ")")]
+                              [i 0]))
               (list "+" "2" "3"))
-
-(check-expect (read_form (list "(" "+" "2" "3" ")" "(" "*" "3" "4" ")" ")"))
+(check-expect (read_list  (new Reader% [tokens (list "(" "(" "+" "2" "3" ")" "(" "*" "3" "4" ")" ")")]
+                               [i 0]))
               (list (list "+" "2" "3") (list "*" "3" "4")))
-(check-expect (read_list (list "2" "3" "(" "*" "3" "4" ")"))
-              (list "2" "3" (list "*" "3" "4")))
-(define (read_list los)
-  (local [(define (read_list0 lis rsf)
-            (local [(define first
-                      (if (not (empty? lis))
-                          (peek lis)
-                          ""))]
-              (cond [(empty? lis) (raise 'failed #t)]
+(check-expect (read_list (new Reader% [tokens (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")")]
+                              [i 0]))
+              (list "+" "2" "3" (list "*" "3" "4")))
+
+(define (read_list reader)
+  (local [(define (read_list0 rsf)
+            (local [(define first (send reader peek))]
+              (cond ;[(empty? lis) (raise 'failed #t)]
+                    [(string=? "(" first) (read_list0 (send reader next))]
                     [(string=? ")" first) rsf]
                     [else
-                     (cons (read_form lis) (read_list0 (rest lis) (append rsf (list first))))])))]
-    (read_list0 los '())))
+                     (cons (read_form reader) (read_list0 (append rsf (list first))))])))]
+    (read_list0 '())))
 
-(define (read_atom los)
-  (first los))
+(define (read_atom reader)
+  (send reader next))
 
 ;(tokenize "(+ 2 (* 3 4))")
 ;(read_list (list "(" "!" ")"))

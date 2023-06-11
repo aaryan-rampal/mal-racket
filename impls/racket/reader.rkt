@@ -13,7 +13,8 @@
       (cond [(end?) null]
             [else (list-ref tokens i)]))
     (define/public (peek_prev)
-      (list-ref tokens (- i 1)))
+      (cond [(end?) null]
+            [else (list-ref tokens (- i 1))]))
     (define/public (next)
       (begin (set! i (+ i 1))
              (peek_prev)))
@@ -67,15 +68,11 @@
                     [(string=? "(" first)
                      (read_form0
                       (if (empty? rsf)
-                          (list (read_list reader "("))
+                          (read_list reader "(")
                           (append rsf (list (read_list reader "("))))
                       reader)]
                     [else
-                     (read_form0
-                      (if (empty? rsf)
-                          (list (read_atom reader))
-                          (append rsf (list (read_atom reader))))
-                      reader)])))]
+                     (read_atom reader)])))]
     (read_form0 '() reader)))
 
 
@@ -98,17 +95,17 @@
  (list "+" "2" "3" (list "*" "3" "4")))
 
 (define (read_list reader frst)
-  ;; rsf is a list of the arguments seen so far by read_list 
-  (local [(define (read_list0 rsf)
-            (local [(define first (if (send reader end?)
-                                      ""
-                                      (send reader next)))]
-              (cond [(send reader end?)
-                     (raise "Unexpected EOF: no \")\" to end \"(\".")]
-                    [(not (string=? "(" first)) (raise "error")]
-                    [(string=? "(" first) (read_seq reader "(" ")")]
-                    [(string=? ")" first) (raise "Unexpected \")\"")])))]
-    (read_list0 '())))
+  (local [(define first (send reader next))]
+    (cond [(send reader end?)
+           (raise "Unexpected EOF: no \")\" to end \"(\".")]
+          [(not (string=? "(" first))
+           (raise "error")]
+          [(string=? "(" first)
+           (let ([lst (read_seq reader "(" ")")])
+             (send reader next)
+             lst)]
+          [(string=? ")" first)
+           (raise "Unexpected \")\"")])))
 
 
 
@@ -120,17 +117,11 @@
               (list "+" "2" "3" (list "*" "3" "4")))
 
 (define (read_seq reader frst end)
-  (local [(define (read_seq0 rsf)
-            (local [(define token (send reader next))]
-              (cond [(send reader end?)
-                     (raise "Unexpected EOF: no \")\" to end \"(\". read_seq0")]
-                    [(string=? token end) rsf]
-                    [else
-                     (read_seq0
-                      (if (empty? rsf)
-                          (read_form reader)
-                          (append rsf (list (read_form reader)))))])))]
-    (read_seq0 '())))
+  (local [(define token (send reader peek))]
+    (cond [(send reader end?)
+           '()]
+          [(string=? token end) '()]
+          [else (cons (read_form reader) (read_seq reader "(" ")"))])))
 
 
 

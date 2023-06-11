@@ -44,9 +44,6 @@
 
 
 
-;(check-expect (read_form (new Reader% [tokens (list "+" "2" "3" ")")]
-;                              [i 0]))
-;              (list "+" "2" "3"))
 (check-expect (read_form (new Reader% [tokens (list "(" "+" "2" "3" ")")]
                               [i 0]))
               (list "+" "2" "3"))
@@ -70,12 +67,15 @@
                     [(string=? "(" first)
                      (read_form0
                       (if (empty? rsf)
-                          (read_list reader "(")
-                          (cons rsf (cons (read_list reader "(") '())))
+                          (list (read_list reader "("))
+                          (append rsf (list (read_list reader "("))))
                       reader)]
                     [else
                      (read_form0
-                      (append rsf (list (read_atom reader))) reader)])))]
+                      (if (empty? rsf)
+                          (list (read_atom reader))
+                          (append rsf (list (read_atom reader))))
+                      reader)])))]
     (read_form0 '() reader)))
 
 
@@ -100,7 +100,8 @@
 (define (read_list reader frst)
   ;; rsf is a list of the arguments seen so far by read_list 
   (local [(define (read_list0 rsf)
-            (local [(define first (if (send reader end?) ""
+            (local [(define first (if (send reader end?)
+                                      ""
                                       (send reader next)))]
               (cond [(send reader end?)
                      (raise "Unexpected EOF: no \")\" to end \"(\".")]
@@ -111,18 +112,24 @@
 
 
 
-(check-expect (read_seq (new Reader% [tokens (list "(" "+" "2" "3" ")")]
+(check-expect (read_seq (new Reader% [tokens (list "+" "2" "3" ")")]
                              [i 0]) "(" ")")
               (list "+" "2" "3"))
-(check-expect (read_seq (new Reader% [tokens (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")")]
+(check-expect (read_seq (new Reader% [tokens (list "+" "2" "3" "(" "*" "3" "4" ")" ")")]
                              [i 0]) "(" ")")
               (list "+" "2" "3" (list "*" "3" "4")))
+
 (define (read_seq reader frst end)
   (local [(define (read_seq0 rsf)
             (local [(define token (send reader next))]
-              (cond [(string=? token end) rsf]
+              (cond [(send reader end?)
+                     (raise "Unexpected EOF: no \")\" to end \"(\". read_seq0")]
+                    [(string=? token end) rsf]
                     [else
-                     (read_seq0 (append rsf (list token)))])))]
+                     (read_seq0
+                      (if (empty? rsf)
+                          (read_form reader)
+                          (append rsf (list (read_form reader)))))])))]
     (read_seq0 '())))
 
 
@@ -133,7 +140,9 @@
        [i 0])) "(")
 
 (define (read_atom reader)
-  (send reader next))
+  (if (send reader end?)
+      (raise "error in read_atom")
+      (send reader next)))
 
 ;(tokenize "(+ 2 (* 3 4))")
 ;(read_list (list "(" "!" ")"))

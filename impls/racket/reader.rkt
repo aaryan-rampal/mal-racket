@@ -1,145 +1,83 @@
 #lang racket
 
-(require test-engine/racket-tests)
-
 (provide read_str)
+
+(require "types.rkt")
 
 (define Reader%
   (class object%
+    (init tokens)
     (super-new)
-    (init-field tokens)
-    (init-field i)
-    (define/public (peek)
-      (cond [(end?) null]
-            [else (list-ref tokens i)]))
-    (define/public (peek_prev)
-      (cond [(end?) null]
-            [else (list-ref tokens (- i 1))]))
+    (define toks tokens)
+    (define position 0)
     (define/public (next)
-      (begin (set! i (+ i 1))
-             (peek_prev)))
-    (define/public (end?)
-      (>= i (length tokens)))))
+      (cond [(>= position (length toks)) null]
+            [else (begin
+                    (set! position (+ 1 position))
+                    (list-ref toks (- position 1)))]))
+    (define/public (peek)
+      (cond [(>= position (length toks)) null]
+            [else (list-ref toks position )]))))
+      
 
+(define (tokenize str)
+  (filter-not (lambda (s) (or (equal? s "") (equal? (substring s 0 1) ";")))
+    (regexp-match* #px"[\\s,]*(~@|[\\[\\]{}()'`~^@]|\"(?:\\\\.|[^\\\\\"])*\"?|;[^\n]*|[^\\s\\[\\]{}('\"`,;)]*)"
+                   str #:match-select cadr)))
 
+(define (read_atom rdr)
+  (let ([token (send rdr next)])
+    (cond [(regexp-match #px"^-?[0-9]+$" token)
+           (string->number token)]
+          [(regexp-match #px"^-?[0-9][0-9.]*$" token)
+           (string->number token)]
+          [(regexp-match #px"^\"(?:\\\\.|[^\\\\\"])*\"$" token)
+           (with-input-from-string token read)]
+          [(regexp-match #px"^\".*$" token)
+           (raise "expected '\"', got EOF")]
+          [(regexp-match #px"^:" token) (_keyword (substring token 1))]
+          [(equal? "nil" token) nil]
+          [(equal? "true" token) #t]
+          [(equal? "false" token) #f]
+          [else (string->symbol token)])))
+
+(define (read_list_entries rdr end)
+  (let ([tok (send rdr peek)])
+    (cond
+        [(eq? tok '()) (raise (string-append "expected '" end "', got EOF"))]
+        [(equal? end tok) '()]
+        [else
+          (cons (read_form rdr) (read_list_entries rdr end))])))
+
+(define (read_list rdr start end)
+  (let ([token (send rdr next)])
+    (if (equal? start token)
+      (let ([lst (read_list_entries rdr end)])
+        (send rdr next)
+        lst)
+      (raise (string-append "expected '" start "', got EOF")))))
+
+(define (read_form rdr)
+  (let ([token (send rdr peek)])
+    (if (null? token)
+      (raise (make-blank-exn "blank line" (current-continuation-marks)))
+      (cond
+        [(equal? "'" token) (send rdr next) (list 'quote (read_form rdr))]
+        [(equal? "`" token) (send rdr next) (list 'quasiquote (read_form rdr))]
+        [(equal? "~" token) (send rdr next) (list 'unquote (read_form rdr))]
+        [(equal? "~@" token) (send rdr next) (list 'splice-unquote (read_form rdr))]
+        [(equal? "^" token) (send rdr next)
+                            (let ([meta (read_form rdr)])
+                              (list 'with-meta (read_form rdr) meta))]
+        [(equal? "@" token) (send rdr next) (list 'deref (read_form rdr))]
+
+        [(equal? ")" token) (raise "unexpected ')'")]
+        [(equal? "(" token) (read_list rdr "(" ")")]
+        [(equal? "]" token) (raise "unexpected ']'")]
+        [(equal? "[" token) (list->vector (read_list rdr "[" "]"))]
+        [(equal? "}" token) (raise "unexpected '}'")]
+        [(equal? "{" token) (apply hash (read_list rdr "{" "}"))]
+        [else (read_atom rdr)]))))
 
 (define (read_str str)
-  (local [(define reader (new Reader% [tokens (tokenize str)] [i 0]))]
-    (read_form reader)))
-
-;; use regex match, filter all the strings that satisfy NOT (EMPTY AND first
-;; char = ';' and trim all items in list
-(define (tokenize inp)
-  (map string-trim
-       (filter
-        (λ (i)
-          (not (and
-                (string=? i "")
-                (or (string=? i "")
-                    (string=? (string-ref i 0 ) ";")))))
-        (regexp-match*
-         #px"[\\s,]*(~@|[\\[\\]{}()'`~^@]|\"(?:\\.|[^\\\"])*\"?|;.*|[^\\s\\[\\]
-{}('\"`,;)]*)" inp))))
-
-
-
-
-
-(check-expect (read_form (new Reader% [tokens (list "(" "+" "2" "3" ")")]
-                              [i 0]))
-              (list "+" "2" "3"))
-(check-expect
- (read_form
-  (new Reader%
-       [tokens (list "(" "(" "+" "2" "3" ")" "(" "*" "3" "4" ")" ")")]
-       [i 0]))
- (list (list "+" "2" "3") (list "*" "3" "4")))
-(check-expect
- (read_form
-  (new Reader% [tokens (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")")]
-       [i 0]))
- (list "+" "2" "3" (list "*" "3" "4")))
-
-(define (read_form reader)
-  ;; rsf is a list of the arguments seen so far by read_form 
-  (local [(define (read_form0 rsf reader)
-            (local [(define first (send reader peek))]
-              (cond [(send reader end?) '()]
-                    [(string=? "(" first)
-                     
-                          (read_list reader "(")
-                          ]
-                    [else
-                     (read_atom reader)])))]
-    (read_form0 '() reader)))
-
-
-
-
-
-
-(check-expect (read_list (new Reader% [tokens (list "(" "+" "2" "3" ")")]
-                              [i 0]) "(")
-              (list "+" "2" "3"))
-(check-expect
- (read_list
-  (new Reader%
-       [tokens (list "(" "(" "+" "2" "3" ")" "(" "*" "3" "4" ")" ")")]
-       [i 0]) "(")
- (list (list "+" "2" "3") (list "*" "3" "4")))
-(check-expect
- (read_list (new Reader% [tokens (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")")]
-                 [i 0]) "(")
- (list "+" "2" "3" (list "*" "3" "4")))
-
-(define (read_list reader frst)
-  (local [(define first (send reader next))]
-    (cond [(send reader end?)
-           (raise "Unexpected EOF: no \")\" to end \"(\".")]
-          [(not (string=? "(" first))
-           (raise "error")]
-          [(string=? "(" first)
-           (let ([lst (read_seq reader "(" ")")])
-             (send reader next)
-             lst)]
-          [(string=? ")" first)
-           (raise "Unexpected \")\"")])))
-
-
-
-(check-expect (read_seq (new Reader% [tokens (list "+" "2" "3" ")")]
-                             [i 0]) "(" ")")
-              (list "+" "2" "3"))
-(check-expect (read_seq (new Reader% [tokens (list "*" "3" "4" ")")]
-                             [i 0]) "(" ")")
-              (list "*" "3" "4"))
-(check-expect (read_seq (new Reader% [tokens (list "+" "2" "3" "(" "*" "3" "4" ")" ")")]
-                             [i 0]) "(" ")")
-              (list "+" "2" "3" (list "*" "3" "4")))
-
-(define (read_seq reader frst end)
-  (local [(define token (send reader peek))]
-    (cond [(send reader end?)
-           '()]
-          [(string=? token end) '()]
-          [else (cons (read_form reader) (read_seq reader "(" ")"))])))
-
-
-
-(check-expect
- (read_atom
-  (new Reader% [tokens (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")")]
-       [i 0])) "(")
-
-(define (read_atom reader)
-  (if (send reader end?)
-      (raise "error in read_atom")
-      (send reader next)))
-
-;(tokenize "(+ 2 (* 3 4))")
-;(read_list (list "(" "!" ")"))
-;(read_form (tokenize  "(+ 2 (* 3 4))"))
-(read_form (new Reader% [tokens (list "+" "2" "3" ")")]
-                [i 0]))
-(test)
-
+  (read_form (new Reader% [tokens (tokenize str)])))

@@ -1,27 +1,27 @@
+#!/usr/bin/env racket
 #lang racket
 
-(require readline)
-(require readline/readline)
+(require "readline.rkt" "types.rkt")
 
-;; READ
+;; read
 (define (READ str)
   str)
 
-;; EVAL
+;; eval
 (define (EVAL ast env)
   ast)
 
-;; PRINT
+;; print
 (define (PRINT exp)
   exp)
 
-;; rep
+;; repl
 (define (rep str)
   (PRINT (EVAL (READ str) "")))
 
-(define (loop)
-  (local [(define inp (readline "users> "))]
-    (cond [(not (eof-object? inp))
-           (display (string-append (rep inp) "\n")) (loop)])))
-
-(loop)
+(define (repl-loop)
+  (let ([line (readline "user> ")])
+    (when (not (eq? nil line))
+      (printf "~a~n" (rep line))
+      (repl-loop))))
+(repl-loop)

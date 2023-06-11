@@ -13,7 +13,7 @@
       (cond [(end?) null]
             [else (list-ref tokens i)]))
     (define/public (peek_prev)
-      (cond [(end?) null]
+      (cond [(>= (- i 1) (length tokens)) null]
             [else (list-ref tokens (- i 1))]))
     (define/public (next)
       (begin (set! i (+ i 1))
@@ -47,18 +47,23 @@
 
 (check-expect (read_form (new Reader% [tokens (list "(" "+" "2" "3" ")")]
                               [i 0]))
-              (list "+" "2" "3"))
+              (list '+ 2 3))
 (check-expect
  (read_form
   (new Reader%
        [tokens (list "(" "(" "+" "2" "3" ")" "(" "*" "3" "4" ")" ")")]
        [i 0]))
- (list (list "+" "2" "3") (list "*" "3" "4")))
+ (list (list '+ 2 3) (list '* 3 4)))
 (check-expect
  (read_form
   (new Reader% [tokens (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")")]
        [i 0]))
- (list "+" "2" "3" (list "*" "3" "4")))
+ (list '+ 2 3 (list '* 3 4)))
+(check-expect
+ (read_form
+  (new Reader% [tokens (list "1")]
+       [i 0]))
+ 1)
 
 (define (read_form reader)
   (local [(define first (send reader peek))]
@@ -75,17 +80,17 @@
 
 (check-expect (read_list (new Reader% [tokens (list "(" "+" "2" "3" ")")]
                               [i 0]) "(")
-              (list "+" "2" "3"))
+              (list '+ 2 3))
 (check-expect
  (read_list
   (new Reader%
        [tokens (list "(" "(" "+" "2" "3" ")" "(" "*" "3" "4" ")" ")")]
        [i 0]) "(")
- (list (list "+" "2" "3") (list "*" "3" "4")))
+ (list (list '+ 2 3) (list '* 3 4)))
 (check-expect
  (read_list (new Reader% [tokens (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")")]
                  [i 0]) "(")
- (list "+" "2" "3" (list "*" "3" "4")))
+ (list '+ 2 3 (list '* 3 4)))
 
 (define (read_list reader frst)
   (local [(define first (send reader next))]
@@ -104,15 +109,15 @@
 
 (check-expect (read_seq (new Reader% [tokens (list "+" "2" "3" ")")]
                              [i 0]) "(" ")")
-              (list "+" "2" "3"))
+              (list '+ 2 3))
 (check-expect (read_seq (new Reader% [tokens (list "*" "3" "4" ")")]
                              [i 0]) "(" ")")
-              (list "*" "3" "4"))
+              (list '* 3 4))
 (check-expect (read_seq
                (new Reader%
                     [tokens (list "+" "2" "3" "(" "*" "3" "4" ")" ")")]
                     [i 0]) "(" ")")
-              (list "+" "2" "3" (list "*" "3" "4")))
+              (list '+ 2 3 (list '* 3 4)))
 
 (define (read_seq reader frst end)
   (local [(define token (send reader peek))]
@@ -125,13 +130,20 @@
 
 (check-expect
  (read_atom
-  (new Reader% [tokens (list "(" "+" "2" "3" "(" "*" "3" "4" ")" ")")]
-       [i 0])) "(")
+  (new Reader% [tokens (list "1")]
+       [i 0]))
+ 1)
+(check-expect
+ (read_atom
+  (new Reader% [tokens (list "+")]
+       [i 0]))
+ '+)
 
 (define (read_atom reader)
-  (if (send reader end?)
-      (raise "error in read_atom")
-      (send reader next)))
+  (local [(define first (send reader next))]
+    (cond [(regexp-match #px"[0-9]+" first) (string->number first)]
+          [(regexp-match #px"[^a-zA-Z\\d\\s:]" first) (string->symbol first)]
+          [else first])))
 
 (test)
 

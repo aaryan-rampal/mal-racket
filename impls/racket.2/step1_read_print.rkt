@@ -23,6 +23,6 @@
 (define (loop)
   (local [(define inp (readline "users> "))]
     (cond [(not (eof-object? inp))
-           (display (string-append (rep inp) "\n")) (loop)])))
+           (displayln (rep inp)) (loop)])))
 
 (loop)

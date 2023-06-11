@@ -64,13 +64,11 @@
   ;; rsf is a list of the arguments seen so far by read_form 
   (local [(define (read_form0 rsf reader)
             (local [(define first (send reader peek))]
-              (cond [(send reader end?) rsf]
+              (cond [(send reader end?) '()]
                     [(string=? "(" first)
-                     (read_form0
-                      (if (empty? rsf)
+                     
                           (read_list reader "(")
-                          (append rsf (list (read_list reader "("))))
-                      reader)]
+                          ]
                     [else
                      (read_atom reader)])))]
     (read_form0 '() reader)))
@@ -112,6 +110,9 @@
 (check-expect (read_seq (new Reader% [tokens (list "+" "2" "3" ")")]
                              [i 0]) "(" ")")
               (list "+" "2" "3"))
+(check-expect (read_seq (new Reader% [tokens (list "*" "3" "4" ")")]
+                             [i 0]) "(" ")")
+              (list "*" "3" "4"))
 (check-expect (read_seq (new Reader% [tokens (list "+" "2" "3" "(" "*" "3" "4" ")" ")")]
                              [i 0]) "(" ")")
               (list "+" "2" "3" (list "*" "3" "4")))

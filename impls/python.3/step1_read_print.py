@@ -1,5 +1,6 @@
 def READ(str):
-    return str
+    from reader import read_str
+    return read_str(str)
 
 
 def EVAL(ast, env):

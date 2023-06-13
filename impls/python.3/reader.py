@@ -1,3 +1,6 @@
+import re
+
+
 class Reader:
     def __init__(self, tokens):
         self.tokens = tokens
@@ -28,12 +31,42 @@ class Reader:
 
 def read_str(str):
     rdr = Reader(tokenize(str))
-    read_form(rdr)
+    return read_form(rdr)
 
 
 def tokenize(str):
-    return ""
+    pattern = r'[\s,]*(~@|[\[\]{}()\'+`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}(\'"``,;)]+)'  # Updated pattern
+    tokens = re.findall(pattern, str)
+    return tokens
+
+
+def read_list(rdr, end):
+    first = rdr.next()
+    list_tokens = []
+    while first != end:
+        if rdr.end():
+            pass  # TODO pass error here
+        list_tokens.append(read_form(rdr))
+        first = rdr.peek()
+
+    return list_tokens
+
+
+def read_atom(rdr):
+    first = rdr.next()
+    if first.isnumeric():
+        return int(first)
+    elif not first.isalnum():
+        return first
+    else:
+        return first
 
 
 def read_form(rdr):
-    return ""
+    first = rdr.peek()
+    if rdr.end():
+        return []  # TODO is this actually what i want
+    elif first == '(':
+        return read_list(rdr, ')')
+    else:
+        return read_atom(rdr)

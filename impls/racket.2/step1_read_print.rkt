@@ -23,6 +23,10 @@
 (define (loop)
   (local [(define inp (readline "users> "))]
     (cond [(not (eof-object? inp))
-           (displayln (rep inp)) (loop)])))
+           (with-handlers ([exn:fail? (lambda (exn)
+                                      (displayln (exn-message exn))
+                                      #f)])
+             (displayln (rep inp)))
+           (loop)])))
 
 (loop)

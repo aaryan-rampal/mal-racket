@@ -1,0 +1,1 @@
+("8.2" ta6le ("cfd903a10cbb59f8a62f398c3f780e840e4eb116" . "d51a524c5dd0e79e5e9d1b39ec4fe2de856e6839") #"/home/aaryan/personal/summer/mal-racket/impls/racket/types.rkt" (collects #"errortrace" #"errortrace-key.rkt") (collects #"racket" #"main.rkt") (collects #"racket" #"runtime-config.rkt"))

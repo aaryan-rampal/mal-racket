@@ -39,7 +39,7 @@
                     (string=? (string-ref i 0 ) ";")))))
         (regexp-match*
          #px"[\\s,]*(~@|[\\[\\]{}()'`~^@]|\"(?:\\.|[^\\\"])*\"?|;.*|[^\\s\\[\\]
-{}('\"`,;)]*)" inp))))
+{}('\"`,;)]*)" inp #:match-select cadr))))
 
 
 
@@ -95,15 +95,15 @@
 (define (read_list reader frst)
   (local [(define first (send reader next))]
     (cond [(send reader end?)
-           (raise "Unexpected EOF: no \")\" to end \"(\".")]
+           (raise (error "Unexpected EOF: no \")\" to end \"(\"."))]
           [(not (string=? "(" first))
-           (raise "error")]
+           (raise (error "Expected \"(\""))]
           [(string=? "(" first)
            (let ([lst (read_seq reader "(" ")")])
              (send reader next)
              lst)]
           [(string=? ")" first)
-           (raise "Unexpected \")\"")])))
+           (raise (error "Unexpected \")\""))])))
 
 
 
@@ -122,9 +122,10 @@
 (define (read_seq reader frst end)
   (local [(define token (send reader peek))]
     (cond [(send reader end?)
-           '()]
+           (raise (error "Unexpected EOF: no \")\" to end \"(\"."))]
           [(string=? token end) '()]
-          [else (cons (read_form reader) (read_seq reader "(" ")"))])))
+          [else
+           (cons (read_form reader) (read_seq reader "(" ")"))])))
 
 
 

@@ -1,5 +1,7 @@
 import re
 
+from blinker._utilities import _symbol
+
 
 class Reader:
     def __init__(self, tokens):
@@ -46,7 +48,9 @@ def read_list(rdr, end):
     while first != end:
         if rdr.end():
             pass  # TODO pass error here
-        list_tokens.append(read_form(rdr))
+        # TODO a is symbol but list_tokens.append(a) appends a string
+        a = read_form(rdr)
+        list_tokens.append(a)
         first = rdr.peek()
 
     return list_tokens
@@ -57,7 +61,7 @@ def read_atom(rdr):
     if first.isnumeric():
         return int(first)
     elif not first.isalnum():
-        return first
+        return _symbol(first)
     else:
         return first
 
@@ -68,5 +72,6 @@ def read_form(rdr):
         return []  # TODO is this actually what i want
     elif first == '(':
         return read_list(rdr, ')')
+    # TODO another if statement that raises error for ')'
     else:
         return read_atom(rdr)

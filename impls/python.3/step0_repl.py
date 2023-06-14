@@ -1,6 +1,5 @@
 def READ(str):
-    from reader import read_str
-    return read_str(str)
+    return str
 
 
 def EVAL(ast, env):
@@ -8,8 +7,7 @@ def EVAL(ast, env):
 
 
 def PRINT(exp):
-    from printer import pr_str
-    return pr_str(exp)
+    return exp
 
 
 def rep(str):

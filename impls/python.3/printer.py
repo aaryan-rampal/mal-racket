@@ -3,9 +3,7 @@ import re
 
 def pr_str(expr):
     # TODO if for symbol?
-    if re.compile(r"[0-9]+").match(expr):
-        return int(expr)
-    elif isinstance(expr, list):
+    if isinstance(expr, list):
         return pr_list(expr)
     else:
         return expr

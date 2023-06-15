@@ -42,9 +42,10 @@ def tokenize(str):
     return tokens
 
 
-def read_list(rdr, end):
+def read_list(rdr, end, typ=list):
     first = rdr.next()
-    list_tokens = []
+    # list_tokens = []
+    list_tokens = typ()
     while first != end:
         if rdr.end():
             pass  # TODO pass error here

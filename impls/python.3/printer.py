@@ -14,11 +14,12 @@ def pr_list(mal_list):
     first_item = 0
 
     for x in mal_list:
+        to_append = str(pr_str(x))
         if first_item == 0:
-            ans += pr_str(x)
+            ans += to_append
             first_item = 1
         else:
-            ans += " " + pr_str(x)
+            ans += " " + to_append
 
     ans += ")"
     return ans

@@ -1,6 +1,5 @@
 import re
-
-from blinker._utilities import _symbol
+from mal_types import _list, _vector, _hash_map
 
 
 class Reader:
@@ -42,27 +41,41 @@ def tokenize(str):
     return tokens
 
 
-def read_list(rdr, end, typ=list):
+def read_seq(rdr, end, typ=list):
     first = rdr.next()
-    # list_tokens = []
     list_tokens = typ()
     while first != end:
         if rdr.end():
-            pass  # TODO pass error here
+            raise Exception("EOF")
+            return None
         # TODO a is symbol but list_tokens.append(a) appends a string
-        a = read_form(rdr)
-        list_tokens.append(a)
+        next_form = read_form(rdr)
+        if next_form == end:
+            break
+        list_tokens.append(next_form)
         first = rdr.peek()
 
     return list_tokens
+
+
+def read_list(rdr):
+    return read_seq(rdr, ')', _list)
+
+
+def read_vector(rdr):
+    return read_seq(rdr, ']', _vector)
+
+
+def read_hash_map(rdr):
+    return read_seq(rdr, '}', _hash_map)
 
 
 def read_atom(rdr):
     first = rdr.next()
     if first.isnumeric():
         return int(first)
-    elif not first.isalnum():
-        return _symbol(first)
+    # elif not first.isalnum():
+    #     return _symbol(first)
     else:
         return first
 
@@ -72,7 +85,16 @@ def read_form(rdr):
     if rdr.end():
         return []  # TODO is this actually what i want
     elif first == '(':
-        return read_list(rdr, ')')
-    # TODO another if statement that raises error for ')'
+        return read_list(rdr)
+    # elif first == ')':
+    #     raise Exception("Encountered unexpected )")
+    elif first == '{':
+        return read_hash_map(rdr)
+    # elif first == '}':
+    #     raise Exception("Encountered unexpected }")
+    elif first == '[':
+        return read_vector(rdr)
+    # elif first == ']':
+    #     raise Exception("Encountered unexpected ]")
     else:
         return read_atom(rdr)

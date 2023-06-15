@@ -17,7 +17,11 @@ def rep(str):
 
 
 def loop():
-    print(rep(input("users> ")))
+    try:
+        print(rep(input("users> ")))
+    except Exception as e:
+        print(e)
+
     loop()
 
 

@@ -1,0 +1,27 @@
+#lang racket
+
+;; READ
+(define (READ x)
+  (x))
+
+;; EVAL
+(define (EVAL x)
+  (x))
+
+;; PRINT
+(define (PRINT x)
+  (x))
+
+;; rep
+(define (rep x)
+  (PRINT (EVAL (READ x))))
+
+(define file-contents
+    (port->string (open-input-file "a.txt") #:close? #t))
+
+(define (loop in)
+    (for ([l (in-lines in)])
+      (display (rep l))
+      (newline)))
+
+(loop file-contents)

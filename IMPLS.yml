@@ -46,6 +46,7 @@ IMPL:
   - {IMPL: java-truffle}
   - {IMPL: jq}
   - {IMPL: js}
+  - {IMPL: js.2}
   - {IMPL: julia}
   - {IMPL: kotlin}
   - {IMPL: livescript}
@@ -79,6 +80,7 @@ IMPL:
   - {IMPL: python.2}
   - {IMPL: r}
   - {IMPL: racket}
+  - {IMPL: racket.2}
   - {IMPL: rexx}
   - {IMPL: rpython, SLOW: 1}
   - {IMPL: ruby}

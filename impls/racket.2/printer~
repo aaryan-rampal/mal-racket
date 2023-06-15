@@ -1,0 +1,8 @@
+#lang racket
+
+(define (pr_str data)
+  (cond [(number? data) data]
+        [(symbol? data) (to-string data)]
+        [(list? data) (iterate data)]))
+
+(define (iterate))
